@@ -5,11 +5,15 @@ A comprehensive medical AI assistant combining post-consultation documentation, 
 ## 🚀 Features
 
 ### For Doctors
-- **Post-Consultation Documentation**: Generate SOAP notes, ICD-10/CPT codes, prescriptions, and patient education materials from consultation recordings
-- **Pre-Consultation Review**: Review patient-collected histories with AI-generated summaries and risk assessments
+- **Doctor's Dashboard**: Centralized view of appointments, patients, and quick access to all features
+- **Post-Consultation Documentation**: Generate SOAP notes, ICD-10/CPT codes, prescriptions, and insurance claims from consultation recordings
+- **Appointments Management**: View, schedule, and manage patient appointments with status tracking
+- **Patient Records**: Comprehensive patient database with medical history, visits, and notes
 - **Real-time Transcription**: Live recording with speaker diarization during consultations
 
 ### For Patients
+- **Voice-Enabled Chat**: Speak naturally with AI using Web Speech API + ElevenLabs TTS
+- **Appointment Scheduling**: Book appointments with doctors through conversational interface
 - **Pre-Consultation History Collection**: Conversational chatbot that collects medical history before appointments
 - **Digital Health Assistant**: Explain medical reports, schedule appointments, medication reminders, and symptom checking
 - **Multi-language Support**: English, Hindi, Tamil, Telugu, Bengali
@@ -18,7 +22,7 @@ A comprehensive medical AI assistant combining post-consultation documentation, 
 
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
 - **AI**: Llama 3.3 70B via Groq (100% FREE)
-- **Speech**: Web Speech API, Groq Whisper
+- **Speech**: Web Speech API for STT & TTS (100% FREE, unlimited)
 - **State**: React Context + Zustand
 - **Storage**: Local Storage (demo mode)
 

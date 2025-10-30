@@ -98,7 +98,7 @@ export default function HomePage() {
               size="lg" 
               variant="medical"
               className="text-lg px-8 py-6"
-              onClick={() => router.push('/doctor/documentation')}
+              onClick={() => router.push('/doctor')}
             >
               <Stethoscope className="w-5 h-5 mr-2" />
               I'm a Doctor
@@ -187,7 +187,7 @@ export default function HomePage() {
               Your patient data is encrypted and secure. We follow strict HIPAA compliance guidelines to protect sensitive medical information.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="medical" onClick={() => router.push('/doctor/documentation')}>
+              <Button size="lg" variant="medical" onClick={() => router.push('/doctor')}>
                 Get Started as Doctor
               </Button>
               <Button size="lg" variant="outline" onClick={() => router.push('/patient/assistant')}>

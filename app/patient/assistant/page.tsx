@@ -7,18 +7,24 @@ import {
   ArrowLeft, 
   Send, 
   Mic,
+  MicOff,
   Loader2,
   FileText,
   Calendar,
   Pill,
   Activity,
   HelpCircle,
-  Upload
+  Upload,
+  Clock,
+  CheckCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { useAppointmentStore } from '@/lib/appointments-store'
+import { useVoiceChat } from '@/lib/use-voice-chat'
 
 export default function PatientAssistantPage() {
   const router = useRouter()
@@ -31,7 +37,39 @@ export default function PatientAssistantPage() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
+  const [showScheduler, setShowScheduler] = useState(false)
+  const [schedulerData, setSchedulerData] = useState({
+    patientName: '',
+    patientEmail: '',
+    patientPhone: '',
+    specialty: 'General Physician',
+    date: '',
+    time: '',
+    type: 'in-person' as 'in-person' | 'video' | 'phone',
+    reason: ''
+  })
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { addAppointment, getUpcomingAppointments } = useAppointmentStore()
+  const myAppointments = getUpcomingAppointments()
+
+  const { 
+    isListening, 
+    isSpeaking, 
+    toggleListening, 
+    speak, 
+    speakFallback 
+  } = useVoiceChat({
+    onTranscript: (text, isFinal) => {
+      if (isFinal && text.trim()) {
+        setInput(text)
+        setTimeout(() => handleSend(), 100)
+      }
+    },
+    onError: (error) => {
+      console.error('Voice error:', error)
+    },
+    language: 'en-IN'
+  })
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -76,10 +114,56 @@ export default function PatientAssistantPage() {
 
   const handleFeatureClick = (featureId: string) => {
     setSelectedFeature(featureId)
-    const feature = features.find(f => f.id === featureId)
-    if (feature) {
-      setInput(`I need help with: ${feature.title}`)
+    
+    if (featureId === 'appointment') {
+      setShowScheduler(true)
+    } else {
+      const feature = features.find(f => f.id === featureId)
+      if (feature) {
+        setInput(`I need help with: ${feature.title}`)
+      }
     }
+  }
+
+  const handleScheduleAppointment = () => {
+    if (!schedulerData.patientName || !schedulerData.date || !schedulerData.time || !schedulerData.reason) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    const appointment = addAppointment({
+      patientName: schedulerData.patientName,
+      patientEmail: schedulerData.patientEmail,
+      patientPhone: schedulerData.patientPhone,
+      doctorName: 'Dr. Smith', // In real app, this would be selected
+      specialty: schedulerData.specialty,
+      date: schedulerData.date,
+      time: schedulerData.time,
+      duration: 30,
+      type: schedulerData.type,
+      status: 'scheduled',
+      reason: schedulerData.reason,
+    })
+
+    setMessages(prev => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: `✅ Appointment scheduled successfully!\n\nDetails:\n- Doctor: Dr. Smith (${schedulerData.specialty})\n- Date: ${new Date(schedulerData.date).toLocaleDateString()}\n- Time: ${schedulerData.time}\n- Type: ${schedulerData.type}\n\nYou'll receive a confirmation email shortly. The doctor will review your information before the appointment.`
+      }
+    ])
+
+    setShowScheduler(false)
+    setSchedulerData({
+      patientName: '',
+      patientEmail: '',
+      patientPhone: '',
+      specialty: 'General Physician',
+      date: '',
+      time: '',
+      type: 'in-person',
+      reason: ''
+    })
   }
 
   const handleSend = async () => {
@@ -136,6 +220,11 @@ export default function PatientAssistantPage() {
           }
         }
       }
+
+      // Speak the assistant's response (automatically falls back to browser TTS if ElevenLabs fails)
+      if (assistantMessage) {
+        speak(assistantMessage)
+      }
     } catch (error) {
       console.error('Chat error:', error)
       setMessages(prev => [
@@ -171,13 +260,184 @@ export default function PatientAssistantPage() {
               <div>
                 <h1 className="text-xl font-bold">Digital Health Assistant</h1>
                 <p className="text-sm text-muted-foreground">
-                  Your 24/7 health companion
+                  Your AI health companion
                 </p>
               </div>
             </div>
+            <Button variant="outline" onClick={() => router.push('/patient/select-language?mode=assistant')}>
+              <Mic className="w-4 h-4 mr-2" />
+              Switch to Voice Mode
+            </Button>
           </div>
         </div>
       </header>
+
+      {/* Appointment Scheduler Modal */}
+      {showScheduler && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Schedule an Appointment</CardTitle>
+                <CardDescription>Fill in the details to book your appointment</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Your Name *</label>
+                    <Input
+                      placeholder="John Doe"
+                      value={schedulerData.patientName}
+                      onChange={(e) => setSchedulerData({...schedulerData, patientName: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Email</label>
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      value={schedulerData.patientEmail}
+                      onChange={(e) => setSchedulerData({...schedulerData, patientEmail: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Phone</label>
+                    <Input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={schedulerData.patientPhone}
+                      onChange={(e) => setSchedulerData({...schedulerData, patientPhone: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Specialty *</label>
+                    <select
+                      value={schedulerData.specialty}
+                      onChange={(e) => setSchedulerData({...schedulerData, specialty: e.target.value})}
+                      className="w-full px-3 py-2 rounded-md border bg-background"
+                    >
+                      <option>General Physician</option>
+                      <option>Cardiologist</option>
+                      <option>Dermatologist</option>
+                      <option>Pediatrician</option>
+                      <option>Orthopedic</option>
+                      <option>ENT Specialist</option>
+                      <option>Gynecologist</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Date *</label>
+                    <Input
+                      type="date"
+                      min={new Date().toISOString().split('T')[0]}
+                      value={schedulerData.date}
+                      onChange={(e) => setSchedulerData({...schedulerData, date: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Time *</label>
+                    <Input
+                      type="time"
+                      value={schedulerData.time}
+                      onChange={(e) => setSchedulerData({...schedulerData, time: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Appointment Type *</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['in-person', 'video', 'phone'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setSchedulerData({...schedulerData, type: type as any})}
+                        className={`p-3 rounded-lg border text-center capitalize ${
+                          schedulerData.type === type
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        {type === 'in-person' && '🏥'}
+                        {type === 'video' && '📹'}
+                        {type === 'phone' && '📞'}
+                        <div className="text-sm mt-1">{type}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Reason for Visit *</label>
+                  <Textarea
+                    placeholder="Describe your symptoms or reason for consultation..."
+                    value={schedulerData.reason}
+                    onChange={(e) => setSchedulerData({...schedulerData, reason: e.target.value})}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleScheduleAppointment}
+                    className="flex-1"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Schedule Appointment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowScheduler(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      )}
+
+      {/* My Appointments Section */}
+      {myAppointments.length > 0 && messages.length === 1 && (
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Your Upcoming Appointments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {myAppointments.slice(0, 3).map((apt) => (
+                  <div
+                    key={apt.id}
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                  >
+                    <div>
+                      <p className="font-semibold">{apt.doctorName} - {apt.specialty}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(apt.date).toLocaleDateString()} at {apt.time}
+                      </p>
+                    </div>
+                    <Badge>{apt.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Feature Cards */}
       {messages.length === 1 && (
@@ -266,12 +526,13 @@ export default function PatientAssistantPage() {
         <div className="container mx-auto px-4 py-4 max-w-4xl">
           <div className="flex items-end gap-2">
             <Button
-              variant="outline"
+              variant={isListening ? 'destructive' : 'outline'}
               size="icon"
               className="shrink-0"
-              title="Upload file"
+              onClick={toggleListening}
+              disabled={isSpeaking}
             >
-              <Upload className="w-5 h-5" />
+              {isListening ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
             </Button>
 
             <Textarea
