@@ -4,48 +4,81 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Sophisticated Medical Palette - Light Mode */
+    --background: 40 20% 98%; /* Warm off-white #faf9f7 */
+    --foreground: 215 30% 18%; /* Deep navy text */
+    
+    /* Primary - Clinical Teal (muted, professional) */
+    --primary: 180 35% 35%; /* #2c7a7b - muted teal */
+    --primary-foreground: 40 20% 98%;
+    
+    /* Secondary - Deep Medical Blue */
+    --secondary: 215 45% 25%; /* Deep navy #1a2f4a */
+    --secondary-foreground: 40 20% 98%;
+    
+    /* Accent - Warm Terracotta */
+    --accent: 25 75% 50%; /* #d97706 - burnt orange */
+    --accent-foreground: 40 20% 98%;
+    
+    /* Neutrals - Intentional, not generic */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 30% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
-    --radius: 0.5rem;
+    --popover-foreground: 215 30% 18%;
+    --muted: 40 15% 95%; /* Warm gray, not blue-gray */
+    --muted-foreground: 215 15% 45%;
+    --border: 40 12% 88%;
+    --input: 40 12% 88%;
+    --ring: 180 35% 35%;
+    
+    /* Sage green for variety */
+    --sage: 150 20% 45%;
+    
+    /* Status */
+    --success: 150 40% 42%;
+    --warning: 35 85% 55%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --radius: 0.5rem; /* Tighter radius, more clinical */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 199 89% 48%;
+    /* Professional Dark - Deep Navy, NOT slate */
+    --background: 215 50% 8%; /* #0a1628 - deep navy */
+    --foreground: 40 15% 92%; /* Warm off-white */
+    
+    /* Primary - Brighter teal for dark */
+    --primary: 180 45% 55%; /* Visible but not neon */
+    --primary-foreground: 215 50% 8%;
+    
+    /* Secondary - Lighter navy */
+    --secondary: 215 35% 35%;
+    --secondary-foreground: 40 15% 92%;
+    
+    /* Accent - Warm orange */
+    --accent: 25 80% 58%;
+    --accent-foreground: 215 50% 8%;
+    
+    /* Neutrals - Warm dark tones */
+    --card: 215 45% 12%; /* Tinted dark blue */
+    --card-foreground: 40 15% 92%;
+    --popover: 215 45% 12%;
+    --popover-foreground: 40 15% 92%;
+    --muted: 215 40% 16%;
+    --muted-foreground: 40 10% 65%;
+    --border: 215 35% 20%;
+    --input: 215 35% 20%;
+    --ring: 180 45% 55%;
+    
+    /* Sage for variety */
+    --sage: 150 25% 50%;
+    
+    /* Status */
+    --success: 150 45% 48%;
+    --warning: 35 90% 60%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
   }
 }
 
@@ -57,33 +90,72 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  
+  /* Font family utilities */
+  .font-display {
+    font-family: var(--font-display), system-ui, sans-serif;
+  }
+  
+  .font-sans {
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-gray-800/20;
+  /* Professional Shadows - Subtle, not overdone */
+  .shadow-clinical {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   }
   
-  .glass-strong {
-    @apply bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl border border-white/30 dark:border-gray-800/30;
+  .shadow-elevated {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
   }
   
-  .gradient-medical {
-    @apply bg-gradient-to-br from-blue-500 via-cyan-500 to-purple-600;
+  .shadow-prominent {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
   }
   
-  .gradient-text {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  .dark .shadow-clinical {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   }
   
-  .animate-in {
-    animation: fadeIn 0.5s ease-out;
+  .dark .shadow-elevated {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
   }
   
-  .animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .dark .shadow-prominent {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.5);
   }
   
+  /* Intentional Spacing - Not uniform */
+  .space-section {
+    @apply py-20 md:py-28 lg:py-36;
+  }
+  
+  .space-section-sm {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+  
+  .space-asymmetric-y {
+    padding-top: 5rem;
+    padding-bottom: 8rem;
+  }
+  
+  /* Typography - Tight leading for clinical precision */
+  .leading-clinical {
+    line-height: 1.2;
+  }
+  
+  .leading-comfortable {
+    line-height: 1.6;
+  }
+  
+  /* Subtle transitions - not overdone */
+  .transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Scrollbar */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -91,6 +163,29 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Bento box grid - asymmetric */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .bento-span-2 {
+    grid-column: span 2;
+  }
+  
+  .bento-span-3 {
+    grid-column: span 3;
+  }
+  
+  .bento-span-4 {
+    grid-column: span 4;
+  }
+  
+  .bento-row-2 {
+    grid-row: span 2;
   }
 }
 

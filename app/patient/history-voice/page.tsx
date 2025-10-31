@@ -10,11 +10,11 @@ import {
   Volume2,
   VolumeX,
   Loader2,
-  MessageSquare
+  MessageSquare,
+  Stethoscope,
+  CheckCircle
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { useVoiceChat } from '@/lib/use-voice-chat'
 import { VoiceWaveform, ListeningIndicator, SpeakingIndicator } from '@/components/voice-waveform'
 
@@ -46,7 +46,6 @@ export default function PatientHistoryVoicePage() {
   const [isMuted, setIsMuted] = useState(false)
   const [language, setLanguage] = useState(langParam)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const recognitionRef = useRef<any>(null)
 
   const { 
     isListening, 
@@ -54,7 +53,6 @@ export default function PatientHistoryVoicePage() {
     isSupported,
     toggleListening, 
     speak, 
-    speakFallback,
     stopSpeaking 
   } = useVoiceChat({
     onTranscript: (text, isFinal) => {
@@ -78,33 +76,20 @@ export default function PatientHistoryVoicePage() {
     scrollToBottom()
   }, [messages])
 
-  // Auto-speak first message
   useEffect(() => {
     if (messages.length === 1 && !isMuted) {
       setTimeout(() => {
         speak(messages[0].content)
       }, 1000)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Cleanup: Stop speaking when component unmounts or when navigating away
   useEffect(() => {
     return () => {
-      // Force stop all speech
       window.speechSynthesis.cancel()
       stopSpeaking()
     }
   }, [stopSpeaking])
-
-  // Stop listening when component unmounts
-  useEffect(() => {
-    return () => {
-      if (isListening) {
-        recognitionRef.current?.stop()
-      }
-    }
-  }, [isListening])
 
   const handleVoiceInput = async (userMessage: string) => {
     if (isLoading) return
@@ -152,28 +137,22 @@ export default function PatientHistoryVoicePage() {
                   return newMessages
                 })
               }
-            } catch (e) {
-              // Skip invalid JSON
-            }
+            } catch (e) {}
           }
         }
       }
 
-      // Update progress
       const newProgress = Math.min(100, (messages.length / 20) * 100)
       setProgress(newProgress)
 
-      // Auto-toggle: Stop listening before AI speaks
       if (isListening) {
         toggleListening()
       }
 
-      // Speak the response if not muted
       if (!isMuted && assistantMessage) {
         await new Promise(resolve => setTimeout(resolve, 500))
         await speak(assistantMessage)
         
-        // Auto-toggle: Resume listening after AI finishes speaking
         await new Promise(resolve => setTimeout(resolve, 1000))
         if (!isListening && !isMuted) {
           toggleListening()
@@ -198,80 +177,94 @@ export default function PatientHistoryVoicePage() {
   }
 
   const languages = [
-    { code: 'en-IN', name: 'English', flag: '🇮🇳' },
-    { code: 'hi-IN', name: 'हिंदी', flag: '🇮🇳' },
-    { code: 'ta-IN', name: 'தமிழ்', flag: '🇮🇳' },
-    { code: 'te-IN', name: 'తెలుగు', flag: '🇮🇳' },
-    { code: 'bn-IN', name: 'বাংলা', flag: '🇮🇳' },
-    { code: 'mr-IN', name: 'मराठी', flag: '🇮🇳' },
-    { code: 'gu-IN', name: 'ગુજરાતી', flag: '🇮🇳' },
-    { code: 'kn-IN', name: 'ಕನ್ನಡ', flag: '🇮🇳' }
+    { code: 'en-IN', name: 'English' },
+    { code: 'hi-IN', name: 'हिंदी' },
+    { code: 'ta-IN', name: 'தமிழ்' },
+    { code: 'te-IN', name: 'తెలుగు' },
+    { code: 'bn-IN', name: 'বাংলা' },
+    { code: 'mr-IN', name: 'मराठी' },
+    { code: 'gu-IN', name: 'ગુજરાતી' },
+    { code: 'kn-IN', name: 'ಕನ್ನಡ' }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Header */}
-      <header className="glass border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/patient/history')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold">Voice Mode - Patient History</h1>
-                <p className="text-sm text-muted-foreground">Speak naturally, I'll listen</p>
+    <div className="min-h-screen bg-background">
+      {/* Professional Header */}
+      <header className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-md border-b border-border/40 shadow-clinical">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push('/patient/history')}
+                className="w-9 h-9 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-smooth"
+              >
+                <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center shadow-clinical">
+                  <Stethoscope className="w-5 h-5 text-secondary-foreground" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <div className="text-base font-bold tracking-tight">Patient History</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Pre-consultation</div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="px-3 py-2 rounded-lg border bg-background text-sm"
+                className="h-9 px-3 rounded-md border border-border bg-background text-sm hidden md:block"
                 disabled={isListening || isSpeaking}
               >
                 {languages.map(lang => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.name}
-                  </option>
+                  <option key={lang.code} value={lang.code}>{lang.name}</option>
                 ))}
               </select>
-              <Button variant="outline" size="sm" onClick={() => router.push('/patient/history')}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Switch to Chat
-              </Button>
-              <Button variant="outline" size="icon" onClick={toggleMute}>
-                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-              </Button>
+              <button
+                onClick={() => router.push('/patient/history')}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth hidden sm:block"
+              >
+                Text Mode
+              </button>
+              <button
+                onClick={toggleMute}
+                className="w-9 h-9 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-smooth"
+              >
+                {isMuted ? <VolumeX className="w-4 h-4" strokeWidth={1.5} /> : <Volume2 className="w-4 h-4" strokeWidth={1.5} />}
+              </button>
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Progress Bar */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Conversation Progress</span>
-            <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
-          </div>
-          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-purple-600 to-blue-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-        </div>
+      <div className="pt-20 pb-12">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          {/* Progress Bar */}
+          {progress > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-muted-foreground">Collection Progress</span>
+                <span className="text-sm font-semibold text-primary">{Math.round(progress)}%</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  className="h-full bg-primary"
+                />
+              </div>
+            </div>
+          )}
 
-        {/* Voice Interface */}
-        <Card className="mb-6 border-2 border-purple-200 dark:border-purple-800">
-          <CardContent className="p-8">
+          {/* Voice Interface */}
+          <div className="mb-8 bg-card border border-border rounded-lg p-8 shadow-clinical">
             <div className="flex flex-col items-center gap-6">
               {/* Waveform */}
-              <div className="w-full h-20 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg overflow-hidden">
-                <VoiceWaveform isActive={isListening || isSpeaking} />
+              <div className="w-full h-20 bg-secondary/5 rounded-lg overflow-hidden">
+                <VoiceWaveform isActive={isListening || isSpeaking} color="hsl(var(--secondary))" />
               </div>
 
               {/* Status Indicators */}
@@ -287,78 +280,99 @@ export default function PatientHistoryVoicePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="w-full p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800"
+                    className="w-full p-4 bg-secondary/5 rounded-lg border border-secondary/10"
                   >
-                    <p className="text-sm text-muted-foreground mb-1">You're saying:</p>
-                    <p className="text-lg">{currentTranscript}</p>
+                    <p className="text-xs text-muted-foreground mb-1">You're saying:</p>
+                    <p className="text-base">{currentTranscript}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Microphone Button */}
-              <Button
-                size="lg"
-                variant={isListening ? 'destructive' : 'default'}
-                className="w-32 h-32 rounded-full text-xl"
+              <button
                 onClick={toggleListening}
                 disabled={!isSupported || isLoading || isSpeaking}
+                className={`w-32 h-32 rounded-full flex items-center justify-center transition-all shadow-elevated ${
+                  isListening 
+                    ? 'bg-destructive text-destructive-foreground scale-110' 
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isListening ? (
-                  <MicOff className="w-12 h-12 animate-pulse" />
+                  <MicOff className="w-12 h-12 animate-pulse" strokeWidth={2} />
                 ) : (
-                  <Mic className="w-12 h-12" />
+                  <Mic className="w-12 h-12" strokeWidth={2} />
                 )}
-              </Button>
+              </button>
 
               <p className="text-sm text-muted-foreground text-center max-w-md">
                 {isListening 
-                  ? "I'm listening... Speak naturally and I'll understand"
+                  ? "Listening... Tell me about your health concerns"
                   : isSpeaking
-                  ? "I'm speaking... Please wait"
+                  ? "Speaking... Please wait"
                   : isLoading
-                  ? "Thinking..."
-                  : "Tap the microphone and start speaking"}
+                  ? "Processing your information..."
+                  : "Tap the microphone to share your medical history"}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Conversation History */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-sm text-muted-foreground">Conversation History</h3>
-          {messages.map((message, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, x: message.role === 'user' ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-purple-600 text-white'
-                    : 'glass border'
-                }`}
+          {/* Conversation History */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground">Conversation</h3>
+            {messages.map((message, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: message.role === 'user' ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-              </div>
-            </motion.div>
-          ))}
+                <div
+                  className={`max-w-[85%] rounded-lg px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'bg-secondary text-secondary-foreground'
+                      : 'bg-card border border-border shadow-clinical'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap leading-comfortable">{message.content}</p>
+                </div>
+              </motion.div>
+            ))}
 
-          {isLoading && (
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start"
+              >
+                <div className="bg-card border border-border rounded-lg px-4 py-3 shadow-clinical">
+                  <Loader2 className="w-5 h-5 animate-spin text-secondary" strokeWidth={1.5} />
+                </div>
+              </motion.div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Completion Message */}
+          {progress >= 80 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 bg-primary/5 border border-primary/10 rounded-lg p-6"
             >
-              <div className="glass border rounded-2xl px-4 py-3">
-                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div>
+                  <h4 className="font-semibold mb-1">History Collection Complete</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Thank you for sharing your information. Your doctor will review this before your appointment.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
       </div>
     </div>

@@ -32,3 +32,18 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Backup files
+*.backup
+*.old
+*.tmp
+*-old.*
+
+# Documentation drafts
+NEXT_STEPS.md
+PROJECT_SUMMARY.md
+QUICK_START.md
+REDESIGN_NOTES.md
+SETUP_GUIDE.md
+VOICE_SETUP.md
+FREE_AI_ALTERNATIVES.md

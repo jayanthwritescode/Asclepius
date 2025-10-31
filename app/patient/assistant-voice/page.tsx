@@ -13,10 +13,12 @@ import {
   MessageSquare,
   Calendar,
   FileText,
-  Pill
+  Pill,
+  Stethoscope,
+  Languages
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { useVoiceChat } from '@/lib/use-voice-chat'
 import { VoiceWaveform, ListeningIndicator, SpeakingIndicator } from '@/components/voice-waveform'
 
@@ -47,7 +49,6 @@ export default function PatientAssistantVoicePage() {
   const [isMuted, setIsMuted] = useState(false)
   const [language, setLanguage] = useState(langParam)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const recognitionRef = useRef<any>(null)
 
   const { 
     isListening, 
@@ -78,38 +79,23 @@ export default function PatientAssistantVoicePage() {
     scrollToBottom()
   }, [messages])
 
-  // Auto-speak first message
   useEffect(() => {
     if (messages.length === 1 && !isMuted) {
       setTimeout(() => {
         speak(messages[0].content)
       }, 1000)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Cleanup: Stop speaking when component unmounts or when navigating away
   useEffect(() => {
     return () => {
-      // Force stop all speech
       window.speechSynthesis.cancel()
       stopSpeaking()
     }
   }, [stopSpeaking])
 
-  // Stop listening when component unmounts
-  useEffect(() => {
-    return () => {
-      if (isListening) {
-        recognitionRef.current?.stop()
-      }
-    }
-  }, [isListening])
-
-  const handleVoiceInput = async (userMessage: string) => {
-    if (isLoading) return
-
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+  const handleVoiceInput = async (text: string) => {
+    setMessages(prev => [...prev, { role: 'user', content: text }])
     setIsLoading(true)
 
     try {
@@ -117,7 +103,7 @@ export default function PatientAssistantVoicePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: userMessage }],
+          messages: [...messages, { role: 'user', content: text }],
           type: 'patient-assistant'
         })
       })
@@ -152,28 +138,13 @@ export default function PatientAssistantVoicePage() {
                   return newMessages
                 })
               }
-            } catch (e) {
-              // Skip invalid JSON
-            }
+            } catch (e) {}
           }
         }
       }
 
-      // Auto-toggle: Stop listening before AI speaks
-      if (isListening) {
-        toggleListening()
-      }
-
-      // Speak the response if not muted
-      if (!isMuted && assistantMessage) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        await speak(assistantMessage)
-        
-        // Auto-toggle: Resume listening after AI finishes speaking
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        if (!isListening && !isMuted) {
-          toggleListening()
-        }
+      if (assistantMessage && !isMuted) {
+        speak(assistantMessage)
       }
     } catch (error) {
       console.error('Chat error:', error)
@@ -187,89 +158,109 @@ export default function PatientAssistantVoicePage() {
   }
 
   const toggleMute = () => {
-    if (isSpeaking) {
+    setIsMuted(!isMuted)
+    if (!isMuted) {
       stopSpeaking()
     }
-    setIsMuted(!isMuted)
   }
 
   const features = [
-    { icon: FileText, label: 'Medical Reports', color: 'text-blue-600' },
-    { icon: Calendar, label: 'Appointments', color: 'text-purple-600' },
-    { icon: Pill, label: 'Medications', color: 'text-green-600' }
+    { icon: Calendar, label: 'Appointments', color: 'text-primary' },
+    { icon: FileText, label: 'Reports', color: 'text-secondary' },
+    { icon: Pill, label: 'Medications', color: 'text-accent' }
   ]
 
   const languages = [
-    { code: 'en-IN', name: 'English', flag: '🇮🇳' },
-    { code: 'hi-IN', name: 'हिंदी', flag: '🇮🇳' },
-    { code: 'ta-IN', name: 'தமிழ்', flag: '🇮🇳' },
-    { code: 'te-IN', name: 'తెలుగు', flag: '🇮🇳' },
-    { code: 'bn-IN', name: 'বাংলা', flag: '🇮🇳' },
-    { code: 'mr-IN', name: 'मराठी', flag: '🇮🇳' },
-    { code: 'gu-IN', name: 'ગુજરાતી', flag: '🇮🇳' },
-    { code: 'kn-IN', name: 'ಕನ್ನಡ', flag: '🇮🇳' }
+    { code: 'en-IN', name: 'English' },
+    { code: 'hi-IN', name: 'हिंदी' },
+    { code: 'ta-IN', name: 'தமிழ்' },
+    { code: 'te-IN', name: 'తెలుగు' },
+    { code: 'bn-IN', name: 'বাংলা' },
+    { code: 'mr-IN', name: 'मराठी' },
+    { code: 'gu-IN', name: 'ગુજરાતી' },
+    { code: 'kn-IN', name: 'ಕನ್ನಡ' }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Header */}
-      <header className="glass border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/patient/assistant')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold">Voice Mode - Health Assistant</h1>
-                <p className="text-sm text-muted-foreground">Your AI health companion</p>
+    <div className="min-h-screen bg-background">
+      {/* Professional Header */}
+      <header className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-md border-b border-border/40 shadow-clinical">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push('/patient/assistant')}
+                className="w-9 h-9 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-smooth"
+              >
+                <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-clinical">
+                  <Stethoscope className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <div className="text-base font-bold tracking-tight">Voice Assistant</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Speak naturally</div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="px-3 py-2 rounded-lg border bg-background text-sm"
+                className="h-9 px-3 rounded-md border border-border bg-background text-sm hidden md:block"
                 disabled={isListening || isSpeaking}
               >
                 {languages.map(lang => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.name}
-                  </option>
+                  <option key={lang.code} value={lang.code}>{lang.name}</option>
                 ))}
               </select>
-              <Button variant="outline" size="sm" onClick={() => router.push('/patient/assistant')}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Switch to Chat
-              </Button>
-              <Button variant="outline" size="icon" onClick={toggleMute}>
-                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-              </Button>
+              <button
+                onClick={() => router.push('/patient/assistant')}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth hidden sm:block"
+              >
+                Text Mode
+              </button>
+              <button
+                onClick={toggleMute}
+                className="w-9 h-9 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-smooth"
+              >
+                {isMuted ? <VolumeX className="w-4 h-4" strokeWidth={1.5} /> : <Volume2 className="w-4 h-4" strokeWidth={1.5} />}
+              </button>
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {features.map((feature, idx) => (
-            <Card key={idx} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 text-center">
-                <feature.icon className={`w-8 h-8 mx-auto mb-2 ${feature.color}`} />
-                <p className="text-sm font-medium">{feature.label}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="pt-20 pb-12">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          {/* Quick Actions - Only show initially */}
+          {messages.length === 1 && (
+            <div className="mb-8">
+              <div className="grid grid-cols-3 gap-3">
+                {features.map((feature, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="bg-card border border-border rounded-lg p-4 text-center shadow-clinical"
+                  >
+                    <feature.icon className={`w-6 h-6 mx-auto mb-2 ${feature.color}`} strokeWidth={1.5} />
+                    <p className="text-xs font-medium text-muted-foreground">{feature.label}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Voice Interface */}
-        <Card className="mb-6 border-2 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-8">
+          {/* Voice Interface */}
+          <div className="mb-8 bg-card border border-border rounded-lg p-8 shadow-clinical">
             <div className="flex flex-col items-center gap-6">
               {/* Waveform */}
-              <div className="w-full h-20 bg-gradient-to-r from-blue-100 to-green-100 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg overflow-hidden">
-                <VoiceWaveform isActive={isListening || isSpeaking} color="#3b82f6" />
+              <div className="w-full h-20 bg-primary/5 rounded-lg overflow-hidden">
+                <VoiceWaveform isActive={isListening || isSpeaking} color="hsl(var(--primary))" />
               </div>
 
               {/* Status Indicators */}
@@ -285,78 +276,80 @@ export default function PatientAssistantVoicePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                    className="w-full p-4 bg-primary/5 rounded-lg border border-primary/10"
                   >
-                    <p className="text-sm text-muted-foreground mb-1">You're saying:</p>
-                    <p className="text-lg">{currentTranscript}</p>
+                    <p className="text-xs text-muted-foreground mb-1">You're saying:</p>
+                    <p className="text-base">{currentTranscript}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Microphone Button */}
-              <Button
-                size="lg"
-                variant={isListening ? 'destructive' : 'default'}
-                className="w-32 h-32 rounded-full text-xl"
+              <button
                 onClick={toggleListening}
                 disabled={!isSupported || isLoading || isSpeaking}
+                className={`w-32 h-32 rounded-full flex items-center justify-center transition-all shadow-elevated ${
+                  isListening 
+                    ? 'bg-destructive text-destructive-foreground scale-110' 
+                    : 'bg-accent text-white hover:bg-accent/90'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isListening ? (
-                  <MicOff className="w-12 h-12 animate-pulse" />
+                  <MicOff className="w-12 h-12 animate-pulse" strokeWidth={2} />
                 ) : (
-                  <Mic className="w-12 h-12" />
+                  <Mic className="w-12 h-12" strokeWidth={2} />
                 )}
-              </Button>
+              </button>
 
               <p className="text-sm text-muted-foreground text-center max-w-md">
                 {isListening 
-                  ? "I'm listening... Ask me anything about your health"
+                  ? "Listening... Ask me anything about your health"
                   : isSpeaking
-                  ? "I'm speaking... Please wait"
+                  ? "Speaking... Please wait"
                   : isLoading
-                  ? "Thinking..."
-                  : "Tap the microphone and ask me anything"}
+                  ? "Processing your request..."
+                  : "Tap the microphone and speak naturally"}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Conversation History */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-sm text-muted-foreground">Conversation History</h3>
-          {messages.map((message, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, x: message.role === 'user' ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'glass border'
-                }`}
+          {/* Conversation History */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground">Conversation</h3>
+            {messages.map((message, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: message.role === 'user' ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-              </div>
-            </motion.div>
-          ))}
+                <div
+                  className={`max-w-[85%] rounded-lg px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'bg-accent text-white'
+                      : 'bg-card border border-border shadow-clinical'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap leading-comfortable">{message.content}</p>
+                </div>
+              </motion.div>
+            ))}
 
-          {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start"
-            >
-              <div className="glass border rounded-2xl px-4 py-3">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-              </div>
-            </motion.div>
-          )}
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start"
+              >
+                <div className="bg-card border border-border rounded-lg px-4 py-3 shadow-clinical">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" strokeWidth={1.5} />
+                </div>
+              </motion.div>
+            )}
 
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
     </div>
